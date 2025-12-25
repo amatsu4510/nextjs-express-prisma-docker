@@ -48,6 +48,42 @@ chmod +x setup.sh
 | **バックエンド** | http://localhost:3001 | Express API サーバー |
 | **Prisma Studio** | http://localhost:51212 | データベースのGUI管理画面 |
 
+### 🔍 データベースに直接アクセスする (SQL操作)
+
+GUI（Prisma Studio）を通さず、ターミナルから直接SQLを実行してデータを操作・学習する手順です。
+
+#### 1. PostgreSQL コンソール（psql）への接続
+
+Dockerで動いているデータベースサーバーの中に直接入り、対話型コンソールを起動します。
+
+```bash
+# プロジェクトのルートディレクトリ（docker-compose.ymlがある場所）で実行
+sudo docker compose exec db psql -U user -d my_database
+```
+
+- ユーザー名 (-U): user
+- データベース名 (-d): my_database
+- 終了方法: \q と打ってエンター
+
+#### 2. よく使う SQL コマンド（逆引き）
+
+コンソール（my_database=#）に入った後にコピー＆ペーストで試せます。
+
+| 操作 | コマンド |
+| :--- | :--- |
+|テーブル一覧を見る | \dt
+|テーブルの構造を見る| \d "Post" |
+|データを全件取得する | SELECT * FROM "Post"; |
+|データを1件追加する | INSERT INTO "Post" (title, content) VALUES ('SQLテスト', '直接入力しました'); |
+|表示を日本時間にする | SET TIMEZONE TO 'Asia/Tokyo'; |
+|表示を綺麗にする(縦並び) | \x （もう一度打つと元に戻ります） |
+
+**⚠️ 重要なポイント**
+- セミコロン ;: SQL文の最後には必ず ; をつけてください。つけ忘れると ...> と表示されて入力待ちになります（その場合は ; だけ打ってエンター）。
+- ダブルクォーテーション ": Prismaで作られた大文字を含むテーブル名（Postなど）は、"Post" のように二重引用符で囲む必要があります。
+- シングルクォーテーション ': 文字列（データの内容）は、'テスト' のように一重引用符で囲みます。
+- 保存時刻 (UTC): DB内の時間は世界標準時で保存されています。表示が9時間ずれているのは正常です。
+
 
 ### 📝 開発中の基本操作
 
@@ -57,7 +93,7 @@ chmod +x setup.sh
 - PCをシャットダウンしたり、コンテナを停止してもデータは消えません。
 - データを完全にリセットしたい場合のみ、以下のコマンドを実行してください。
 
-```sh
+```bash
 sudo docker compose down -v
 ```
 
@@ -65,7 +101,7 @@ sudo docker compose down -v
 
 VSCodeなどで型が見つからず赤線が表示された場合は、setup.sh を実行してください。コンテナ内の最新のライブラリ（node_modules）をローカルに同期し、所有権を自分に戻します。
 
-```sh
+```bash
 ./setup.sh
 ```
 
@@ -75,7 +111,7 @@ VSCodeなどで型が見つからず赤線が表示された場合は、setup.sh
 
 プログラムがエラーで止まった場合は、ログを確認してください。
 
-```sh
+```bash
 # バックエンドのログ
 sudo docker compose logs -f backend
 
