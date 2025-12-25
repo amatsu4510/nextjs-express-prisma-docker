@@ -143,39 +143,56 @@ sudo docker compose logs -f frontend
 
 ---
 
-## 🛠️ スキーマ定義（テーブル構造）の変更手順
+## 🛠️ データベース構造（テーブル）の変更手順
 
-新しくテーブルを追加したり、カラム（項目）を増やしたい場合は、以下の手順で行います。
+新しくテーブルを追加したり、項目（カラム）を増やしたりする方法は2通りあります。
 
-### 1. スキーマファイルを編集
-`backend/prisma/schema.prisma` を開いて、`model` 部分を修正します。
+### パターンA：SQLで直接データベースを変更した場合
 
-```prisma
-// 例：Postモデルに content を追加する場合
-model Post {
-  id        Int      @id @default(autoincrement())
-  title     String
-  content   String?  // ← ここを追加（?は空でもOKの意味）
-  createdAt DateTime @default(now())
-}
-```
-
-### 2. 定義をデータベースに反映
-ファイルを保存した後、以下のコマンドを実行すると**即座に実際のDBと型定義に反映**されます。
+SQLコンソール（psql）から `CREATE TABLE` や `ALTER TABLE` を実行した後の同期手順です。
 
 ```bash
-# 1. データベースのテーブル構造を更新
-sudo docker compose exec backend npx prisma db push
+# ① DB（実物）の状態を schema.prisma（設計図）へ逆輸入
+sudo docker compose exec backend npx prisma db pull
 
-# 2. Prisma Client の型（@prisma/client）を再生成
+# ② 型定義を再生成（コード上の入力補完を有効にする）
 sudo docker compose exec backend npx prisma generate
 
-# 3. ローカルの node_modules に反映（以前作成した setup.sh を使うのが確実です）
+# ③ ローカル環境（VSCode）へ型を同期
 ./setup.sh
 ```
 
-**⚠️ 注意：db push について:** `db push` は開発用の便利なコマンドですが、実行するとDBの構造が書き換わります。
-大幅な変更を加える際は、念のため `setup.sh` でデータの同期状態を確認してください。
+### パターンB：Prismaスキーマから変更した場合
+
+`backend/prisma/schema.prisma` ファイルを編集して構造を変える。
+
+#### 1. スキーマファイルの編集例
+ファイル末尾に新しい `model` を追加します。
+
+```prisma
+// 例：新しいテーブル「Tag」を追加する場合
+model Tag {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+}
+```
+#### 2. 反映コマンド
+
+```bash
+# ① schema.prisma（設計図）の内容を DB（実物）へ反映
+sudo docker compose exec backend npx prisma db push
+
+# ② 型定義を再生成
+sudo docker compose exec backend npx prisma generate
+
+# ③ ローカル環境（VSCode）へ型を同期
+./setup.sh
+```
+
+**⚠️ 重要なポイント**
+
+- db pull: 「データベースが正解」としてスキーマファイルを上書きします。
+- db push: 「スキーマファイルが正解」としてデータベースを上書きします。スキーマに書いていないテーブルは削除される可能性があるので注意してください。
 
 ---
 
