@@ -1,0 +1,60 @@
+services:
+  # 1. データベース
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: my_database
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  # 2. バックエンド (API サーバー)
+  backend:
+    build: ./backend
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules    # ★重要：コンテナ内のnode_modulesを保護
+    environment:
+      DATABASE_URL: "postgresql://user:password@db:5432/my_database"
+    depends_on:
+      - db
+    # 起動時に自動でクライアント生成とテーブル作成を行う
+    command: sh -c "npx prisma generate && npx prisma db push && npm run dev"
+
+  # 3. Prisma Studio (DB管理画面) - バックエンドとは独立して動かす
+  studio:
+    build: ./backend
+    working_dir: /app
+    environment:
+      DATABASE_URL: "postgresql://user:password@db:5432/my_database"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    ports:
+      - "51212:5555"
+    command: npx prisma studio --port 5555 --browser none
+    depends_on:
+      - db
+      - backend
+
+  # 4. フロントエンド (Next.js)
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules    # ★重要：フロントのnode_modulesも保護
+    environment:
+      NEXT_PUBLIC_API_URL: "http://localhost:3001"
+    depends_on:
+      - backend
+
+volumes:
+  db_data:

@@ -1,0 +1,15 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// サンプルモデル：動作確認ができたら自由に削除・編集してください
+model Post {
+  id      Int      @id @default(autoincrement())
+  title   String
+  content String?
+  createdAt DateTime @default(now())
+}
